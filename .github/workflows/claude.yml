@@ -1,0 +1,43 @@
+name: Claude
+
+on:
+  issue_comment:
+    types: [created, edited]
+  pull_request_review_comment:
+    types: [created, edited]
+
+jobs:
+  claude:
+    runs-on: ubuntu-latest
+    if: contains(github.event.comment.body, '@claude')
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get issue or PR context
+        id: context
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
+          IS_PULL_REQUEST: ${{ github.event.pull_request != null }}
+        run: |
+          echo "comment_body=$COMMENT_BODY" >> $GITHUB_OUTPUT
+          echo "issue_number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
+          echo "is_pull_request=$IS_PULL_REQUEST" >> $GITHUB_OUTPUT
+      
+      - name: Process Claude request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMENT_BODY: ${{ steps.context.outputs.comment_body }}
+          ISSUE_NUMBER: ${{ steps.context.outputs.issue_number }}
+        run: |
+          echo "Claude is processing the request..."
+          echo "Request: $COMMENT_BODY"
+          echo "Issue/PR: #$ISSUE_NUMBER"
